@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { View, Text } from 'react-native';
-import * as Database from './database.jsx';
+import * as Database from './rxdb-database.jsx';
 
 class TimeList extends Component {
     state = {

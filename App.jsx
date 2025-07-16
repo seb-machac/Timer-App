@@ -1,10 +1,8 @@
-import { useState, useRef } from 'react';
-import {View,Text,StyleSheet,TouchableOpacity} from 'react-native';
-// import { database } from 'react-native-firebase/database';
-//import { firebase } from 'react-native-firebase';
-import TimeList from './time-list';
+import { useState, useRef, useEffect } from 'react';
+import {View,Text,StyleSheet,TouchableOpacity, FlatList} from 'react-native';
 import React from 'react';
-import * as Database from './database.jsx';
+import { initDB, insertTime, getTimes, clearTimes } from './testdatabase.js';
+
 
 
 
@@ -21,6 +19,9 @@ const App = () => {
     const [running, setRunning] = useState(false);
     const intervalRef = useRef(null);
     const startTimeRef = useRef(0);
+    const [records, setRecords] = useState([]);
+
+
     
     //const uri = "mongodb+srv://sebmachac2:Mason1234!@cluster0.5zi2agb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
@@ -45,6 +46,25 @@ const App = () => {
     //     }
     //   }
 
+    useEffect(() => {
+        initDB();
+        fetchTimes();
+    }, []);
+
+    const saveTime = () => {
+        const formatted = formatTime(time);
+        insertTime(formatted);
+        fetchTimes();
+    };
+
+    const fetchTimes = () => {
+        getTimes((data) => {
+            console.log("Fetched times:", data);
+            setRecords(data);
+        });
+    };
+
+
     const StartStopwatch = () => {
         startTimeRef.current = Date.now() - time;
         intervalRef.current = setInterval(() => {
@@ -62,6 +82,7 @@ const App = () => {
         clearInterval(intervalRef.current);
         setTime(0);
         setRunning(false);
+        fetchTimes();
     };
 
     const formatTime = (ms) => {
@@ -75,19 +96,19 @@ const App = () => {
         );
     };
 
-    const addHero = async () => {
-        try {
-            const db = await Database.get();
-            await db.times.insert({
-                id: String(Date.now()),
-                name: 'New Hero ' + Date.now()
-            });
-            const allHeroes = await db.times.find().exec();
-            console.log('Current heroes:', allHeroes.map(hero => hero.toJSON()));
-        } catch (e) {
-            console.error('Insert error:', e);
-        }
-    };
+    // const addHero = async () => {
+    //     try {
+    //         const db = await Database.get();
+    //         await db.times.insert({
+    //             id: String(Date.now()),
+    //             name: 'New Hero ' + Date.now()
+    //         });
+    //         const allHeroes = await db.times.find().exec();
+    //         console.log('Current heroes:', allHeroes.map(hero => hero.toJSON()));
+    //     } catch (e) {
+    //         console.error('Insert error:', e);
+    //     }
+    // };
 
     return (
         <View style={styles.container}>
@@ -112,16 +133,25 @@ const App = () => {
                             onPress={StartStopwatch}>
                             <Text style={styles.buttonText}>Start</Text>
                         </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.startButton]}
+                            onPress={saveTime}
+                            disabled={time === 0}>
+                            <Text style={styles.buttonText}>Save Time</Text>
+                        </TouchableOpacity>
                     </>
                 )}
                 
             </View>
-            <TimeList/>
-            <TouchableOpacity
-                style={[styles.startButton]}
-                onPress={addHero}>
-                <Text style={styles.buttonText}>Add Hero</Text>
-            </TouchableOpacity>
+            <FlatList
+                data={records}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                    <Text style={{ color: 'white', fontSize: 18, marginBottom: 5 }}>
+                    {item.time}
+                    </Text>
+                )}
+            />
         </View>
     );
 };
